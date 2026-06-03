@@ -1,0 +1,61 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+.venv/
+venv/
+env/
+.env
+
+# Data and models (managed by DVC)
+data/raw/
+data/processed/
+models/*.ckpt
+models/*.pt
+models/*.bin
+!models/.gitkeep
+
+# MLflow
+mlruns/
+mlartifacts/
+
+# Hydra outputs
+outputs/
+multirun/
+.hydra/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# DVC (keep .dvc/config but not cache)
+.dvc/cache/
+.dvc/tmp/
+
+# GloVe embeddings (large, tracked by DVC)
+*.txt.gz
+glove.*.txt
+
+# Logs
+*.log
+
+# Personal documents (homework instructions, thesis report)
+Homeworks MLOps METU 26s.md
+Karaca Atakan Thesis report 25f atakank1999.ak@gmail.com.md

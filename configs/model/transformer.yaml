@@ -1,0 +1,11 @@
+name: transformer
+embedding_dim: 256
+num_heads: 8
+num_layers: 4
+ff_dim: 512
+dropout: 0.1
+max_seq_len: 256
+use_hierarchical_head: true
+use_soft_mask: false
+group_loss_weight: 0.3
+leaf_loss_weight: 0.7

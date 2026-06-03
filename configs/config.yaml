@@ -1,0 +1,11 @@
+defaults:
+  - data: arxiv
+  - model: transformer
+  - training: default
+  - preprocessing: default
+  - mlflow: default
+  - dvc: default
+  - _self_
+
+project_name: arxiv-paper-classifier
+seed: 42

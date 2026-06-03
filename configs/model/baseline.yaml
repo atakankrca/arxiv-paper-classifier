@@ -1,0 +1,6 @@
+name: baseline
+embedding_dim: 100
+hidden_dim: 512
+num_layers: 2
+dropout: 0.3
+freeze_embeddings: false

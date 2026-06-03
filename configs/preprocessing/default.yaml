@@ -1,0 +1,4 @@
+max_seq_len: 256
+min_freq: 5
+vocab_size: 50000
+glove_dim: 100

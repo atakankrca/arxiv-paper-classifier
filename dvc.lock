@@ -1,0 +1,18 @@
+schema: '2.0'
+stages:
+  download:
+    cmd: python train.py download
+    deps:
+    - path: arxiv_paper_classifier/commands.py
+      hash: md5
+      md5: 27ca74f351e0ec89a7609b7477b60ca1
+      size: 5860
+    - path: arxiv_paper_classifier/utils/dvc_utils.py
+      hash: md5
+      md5: 50b1c0c0a2788bff73aac738f3f82cc4
+      size: 1257
+    outs:
+    - path: data/raw/arxiv-metadata-oai-snapshot.json
+      hash: md5
+      md5: 1092b9ae356c0eaed75eb59a7fb64a1b
+      size: 5310770312

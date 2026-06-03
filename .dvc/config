@@ -1,0 +1,4 @@
+['remote "data-store"']
+    url = /home/atakan/dvc-remotes/data
+['remote "model-store"']
+    url = /home/atakan/dvc-remotes/models

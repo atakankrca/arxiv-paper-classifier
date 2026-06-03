@@ -1,3 +1,4 @@
+from collections import defaultdict
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -6,69 +7,76 @@ from lightning import Callback, LightningModule, Trainer
 
 
 class PlotSavingCallback(Callback):
-    """Save training curve plots to the plots/ directory at end of training."""
+    """Accumulate per-epoch metrics and save training curve plots at end of training."""
 
     def __init__(self, plots_dir: Path = Path("plots")):
         self.plots_dir = plots_dir
+        self._history: dict[str, list[float]] = defaultdict(list)
+
+    def on_train_epoch_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
+        for key in ("train/loss_epoch", "train/f1"):
+            val = trainer.callback_metrics.get(key)
+            if val is not None:
+                self._history[key].append(float(val))
+
+    def on_validation_epoch_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
+        for key in ("val/loss", "val/f1", "val/auroc", "val/precision"):
+            val = trainer.callback_metrics.get(key)
+            if val is not None:
+                self._history[key].append(float(val))
 
     def on_train_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
         self.plots_dir.mkdir(parents=True, exist_ok=True)
 
-        metrics_history = trainer.callback_metrics
-        logged_metrics: dict[str, list] = {}
-
-        if hasattr(trainer.logger, "experiment"):
-            try:
-                run_id = trainer.logger.run_id  # type: ignore[union-attr]
-                client = mlflow.tracking.MlflowClient(
-                    tracking_uri=trainer.logger.tracking_uri  # type: ignore[union-attr]
-                )
-                for metric_name in ["train/loss_epoch", "val/loss", "val/f1", "val/auroc"]:
-                    history = client.get_metric_history(run_id, metric_name)
-                    if history:
-                        logged_metrics[metric_name] = [m.value for m in history]
-            except Exception:
-                pass
-
-        if not logged_metrics:
-            logged_metrics = {
-                k: [v.item() if hasattr(v, "item") else float(v)]
-                for k, v in metrics_history.items()
-            }
-
-        self._plot_metric(
-            logged_metrics, ["train/loss_epoch", "val/loss"], "Loss", "loss_curve.png"
+        self._save_plot(
+            series={
+                "Train loss": self._history.get("train/loss_epoch", []),
+                "Val loss": self._history.get("val/loss", []),
+            },
+            title="Loss over epochs",
+            ylabel="BCE Loss",
+            filename="loss_curve.png",
         )
-        self._plot_metric(logged_metrics, ["val/f1"], "Validation F1", "val_f1_curve.png")
-        self._plot_metric(logged_metrics, ["val/auroc"], "Validation AUROC", "val_auroc_curve.png")
+        self._save_plot(
+            series={"Val F1 (micro)": self._history.get("val/f1", [])},
+            title="Validation F1 over epochs",
+            ylabel="F1 Score",
+            filename="val_f1_curve.png",
+        )
+        self._save_plot(
+            series={"Val AUROC (micro)": self._history.get("val/auroc", [])},
+            title="Validation AUROC over epochs",
+            ylabel="AUROC",
+            filename="val_auroc_curve.png",
+        )
 
-        if hasattr(trainer.logger, "experiment"):
-            try:
-                for png in self.plots_dir.glob("*.png"):
-                    mlflow.log_artifact(str(png), artifact_path="plots")
-            except Exception:
-                pass
+        try:
+            for png in self.plots_dir.glob("*.png"):
+                mlflow.log_artifact(str(png), artifact_path="plots")
+        except Exception:
+            pass
 
-    def _plot_metric(
+    def _save_plot(
         self,
-        metrics: dict[str, list],
-        keys: list[str],
+        series: dict[str, list[float]],
         title: str,
+        ylabel: str,
         filename: str,
     ) -> None:
-        fig, ax = plt.subplots(figsize=(8, 5))
-        plotted = False
-        for key in keys:
-            if key in metrics and metrics[key]:
-                ax.plot(metrics[key], label=key)
-                plotted = True
-        if not plotted:
-            plt.close(fig)
+        non_empty = {k: v for k, v in series.items() if v}
+        if not non_empty:
             return
+
+        fig, ax = plt.subplots(figsize=(8, 5))
+        for label, values in non_empty.items():
+            ax.plot(range(1, len(values) + 1), values, marker="o", label=label)
+
         ax.set_title(title)
         ax.set_xlabel("Epoch")
+        ax.set_ylabel(ylabel)
         ax.legend()
-        ax.grid(True)
+        ax.grid(True, alpha=0.3)
+
         output_path = self.plots_dir / filename
         fig.savefig(output_path, dpi=100, bbox_inches="tight")
         plt.close(fig)
